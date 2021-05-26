@@ -1,3 +1,28 @@
+
+# Excluding lib/ until we have a library to add which PlatformIO cannot provide.
+lib/
+
+# Leave out .idea JetBrains IDE (CLion) settings dir. This stuff is specific to each developer.
+.idea/
+
+# CMake build and debug dirs added by CLion or the PlatformIO Plugin (not sure)
+# And don't know yet if PlatformIO uses these or if we need these to exist at all.
+# I'm seeing info that PlatformIO does not use CMake, but also seeing hints it does use it. TBD.
+cmake-build-uno/
+cmake-build-debug/
+
+# Until it is determined we need these CMake files, we'll ignore these also
+CMakeLists.txt
+CMakeListsPrivate.txt
+
+# .pio dir looks like all build-related to will exclude this for now
+.pio/
+
+# Will leave out test/ until we need those
+test/
+
+#### ---- Below here is the generic GitHub template for c++. Above is custom ---- ####
+
 # Prerequisites
 *.d
 
