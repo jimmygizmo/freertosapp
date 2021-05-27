@@ -44,6 +44,29 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
 // Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
 
 void dynamic_blink_cycle_task(void *) {
+    // Prior to making this a task, we had nothing between the parens as arguments, just (). A key thing needed
+    // to get the task code at least compiling and running, (not necessarily working correctly but at least
+    // running,) it was require to put exactly this for the arguments (void *). The docs and the error text were
+    // confusing as to the exact syntax needed but forum posts eventually helped me figure out the exact format.
+    // The reasoning is that when a function becomes a task, the concept of arguments changes and also the return
+    // value of the function changes; specifically becoming TaskFunction_t. ( I think. But I tried also declaring
+    // that type at the front of this function def (instead of void) but I don't think that worked and I had to
+    // put it back to void.) The 2 or 3 relevant sections in the FreeRTOS docs are not super clear on this stuff,
+    // so it is good to read it carefully over and over while also trying things and taking info from good
+    // forum postings on StackExchange etc. But I did notice some misleading/bad info on the forums on this topic
+    // too, which you always need to watch out for. Don't assume that a very confident posting by a credible
+    // person, that no one challenges and people say thanks that worked like a charm .. even that info might be
+    // completely wrong for your specific scenario. Develop your own conclusions based on solid and multiple
+    // factors when trying to get something mysterious and complex to work correctly. Take the StackExchange
+    // stuff with a grain of salt and always only use it as a clue here and there, while you empirically cook your
+    // own quality results by using leads and clues from many sources. At this point I have some very weird
+    // high frequency blinking occurring in some unpredictable patterns so what I would like now is some logging
+    // to serial to help me understand what is happening. I will look for logging facilities built into FreeRTOS
+    // or some module that someone has made for this need or I will start adding my own logging which I always
+    // end up doing for everything I work on. You need good visibility into what is actually happening and this
+    // is especially true in asynchronous/real-time systems. In this case known exactly WHEN things happen,
+    // like on what tick or microsecond, seems particularly important. This logging will need good timing output.
+
     TickType_t blink_ticks;  // Will hold calculated tick value before each call to vTaskDelay().
 
     /* Consider how we might make this blinking non-blocking, if not completely, at least to a much greater degree.
@@ -140,6 +163,17 @@ void loop() {
  * Interesting tutorial that should be looked at, maybe referenced in this project (we'll see):
  * https://create.arduino.cc/projecthub/feilipu/using-freertos-multi-tasking-in-arduino-ebc3cc
  * It is a simple blink using FreeRTOS. They say it is generic for any Arduino and dont specify what board.
+ *
+ * Docs relevant to getting the initial FreeRTOS basics working:
+ * Helpful forum posting on needing to pass (void *) as arguments to some functions passed to xTaskCreate():
+ * https://github.com/espressif/arduino-esp32/issues/1414
+ *
+ * xTaskCreate Reference:
+ * https://www.freertos.org/a00125.html
+ *
+ *
+ *
+ *
  *
  */
 
