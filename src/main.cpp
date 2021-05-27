@@ -3,8 +3,9 @@
  * REPO: git@github.com/jimmygizmo/freertosapp
  * WEBSITE: https://ninthdevice.com
  * DESCRIPTION AND OTHER INFO: (See end of file)
- * HARDWARE: OSEPP Arduino UNO R4 (Rev 4.0) (or any UNO or Mega), Velleman VMA203 LCD Keypad (or any similar/common)
- * PLATFORM, LANGUAGES (Versions approx.): Arduino, FreeRTOS v10.4.3-8, C++ v TODO: Finish
+ * LANGUAGES (Versions approx.): Arduino, FreeRTOS v10.4.3-8, C++ v TODO: Finish
+ * PLATFORM: Atmel AVR (3.3.0) > Arduino Uno  [OSEPP Arduino UNO R4 (Rev 4.0)], Velleman VMA203 LCD Keypad
+ * HARDWARE: ATMEGA328P 16MHz, 2KB RAM, 31.50KB Flash
  * TOOLS (Versions approx.): PlatformIO v5.1.1, TODO: Finish
  */
 /****************************************************** INCLUDES ******************************************************/
@@ -45,7 +46,7 @@ void dynamic_blink_cycle() {
      * the same time. For instance, we could also have a servo moving in some pattern, totally independent of the
      * dynamic blinking. This should be a very good initial proof of concept, prior to involving the LCD Keypad
      * and user-input etc. */
-    
+
     digitalWrite(led_pin, HIGH);
     delay(blink_delay);
     digitalWrite(led_pin, LOW);
@@ -72,6 +73,7 @@ void dynamic_blink_cycle() {
 
 /*************************************************** ARDUINO SETUP ****************************************************/
 
+//cppcheck-suppress unusedFunction
 void setup() {
     pinMode(led_pin, OUTPUT);
 
@@ -80,6 +82,7 @@ void setup() {
 
 /************************************************* ARDUINO MAIN LOOP **************************************************/
 
+//cppcheck-suppress unusedFunction
 void loop() {
     // Currently this is just a simple blink test that does not actually use FreeRTOS yet.
 
