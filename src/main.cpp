@@ -21,7 +21,7 @@ int blink_delay = 10;  // Starting value for blink delay in milliseconds. blink_
 
 int delay_min = 10;  // Minimum blink_delay value in milliseconds before the delta_dir will change to ascending (1).
 
-int delay_max = 180;  // Maximum blink_delay value in milliseconds before the delta_dir will change to descending (0).
+int delay_max = 140;  // Maximum blink_delay value in milliseconds before the delta_dir will change to descending (0).
 
 int delta_dir = 1;  // Initial direction for blink_delay increment/decrement: 1 up (add), 0 down (subtract)
 // Up/increment/add means the delays get longer. Down/decrement/subtract mean the delays get shorter.
@@ -34,19 +34,18 @@ int led_pin = 13;
 
 // Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
 
+void dynamic_blink_cycle() {
 
-/*************************************************** ARDUINO SETUP ****************************************************/
-
-void setup() {
-    pinMode(led_pin, OUTPUT);
-
-} /* setup() */
-
-
-/************************************************* ARDUINO MAIN LOOP **************************************************/
-
-void loop() {
-    // Currently this is just a simple blink test that does not actually use FreeRTOS yet.
+    /* Consider how we might make this blinking non-blocking, if not completely, at least to a much greater degree.
+     * At the moment it is a loop that modifies a delta value linearly larger and smaller again to operate the LED.
+     * It totally blocks during the two delay events of each iteration in the full cycle.
+     * We should be able to break this up by making each delay event into a FreeRTOS task so the Arduino can run
+     * other tasks during this new NON-BLOCKING delay. The task scheduling will be dynamic like the delays in the
+     * blocking version are. But, by using FreeRTOS, other parts of the application can independently do work at
+     * the same time. For instance, we could also have a servo moving in some pattern, totally independent of the
+     * dynamic blinking. This should be a very good initial proof of concept, prior to involving the LCD Keypad
+     * and user-input etc. */
+    
     digitalWrite(led_pin, HIGH);
     delay(blink_delay);
     digitalWrite(led_pin, LOW);
@@ -67,6 +66,24 @@ void loop() {
         delta_dir = 0;
         blink_delay = delay_max;
     }
+
+} /* dynamic_blink_cycle() */
+
+
+/*************************************************** ARDUINO SETUP ****************************************************/
+
+void setup() {
+    pinMode(led_pin, OUTPUT);
+
+} /* setup() */
+
+
+/************************************************* ARDUINO MAIN LOOP **************************************************/
+
+void loop() {
+    // Currently this is just a simple blink test that does not actually use FreeRTOS yet.
+
+    dynamic_blink_cycle();
 
 } /* loop() */
 
