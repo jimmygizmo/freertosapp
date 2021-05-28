@@ -38,6 +38,10 @@ int led_pin = 13;
 int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / milliseconds_per_tick
 // Ticks will be needed for vTaskDelay() and likely elsewhere.
 
+// Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
+void dynamic_blink_cycle_task(void *);
+void simple_blink_cycle_task(void *);
+
 
 /************************************************ FUNCTION DEFINITIONS ************************************************/
 
@@ -104,7 +108,16 @@ void dynamic_blink_cycle_task(void *) {
         blink_delay = delay_max;
     }
 
-} /* dynamic_blink_cycle() */
+} /* dynamic_blink_cycle_task() */
+
+
+void simple_blink_cycle_task(void *) {
+    // half second on, half second off.
+    int simple_blink_ticks = 500 / milliseconds_per_tick;
+    digitalWrite(led_pin, HIGH);
+    digitalWrite(led_pin, LOW);
+    vTaskDelay(simple_blink_ticks);
+} /* simple_blink_cycle_task() */
 
 
 /*************************************************** ARDUINO SETUP ****************************************************/
@@ -115,7 +128,8 @@ void setup() {
 
     // FreeRTOS Initialization
     Serial.begin(9600);
-    xTaskCreate(dynamic_blink_cycle_task, "BlinkTask", 128, NULL, 1, NULL);
+    //xTaskCreate(dynamic_blink_cycle_task, "DynamicBlinkTask", 128, NULL, 1, NULL);
+    xTaskCreate(simple_blink_cycle_task, "SimpleBlinkTask", 128, NULL, 1, NULL);
     vTaskStartScheduler();
 
 
@@ -126,9 +140,9 @@ void setup() {
 
 //cppcheck-suppress unusedFunction
 void loop() {
-    // Currently this is just a simple blink test that does not actually use FreeRTOS yet.
 
-    TaskFunction_t dynamic_blink_cycle_task();
+    //TaskFunction_t dynamic_blink_cycle_task();
+    TaskFunction_t simple_blink_cycle_task();
 
 } /* loop() */
 
