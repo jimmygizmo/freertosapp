@@ -114,9 +114,13 @@ void dynamic_blink_cycle_task(void *pvParameters) {
 void simple_blink_cycle_task(void *pvParameters) {
     // half second on, half second off.
     TickType_t simple_blink_ticks = 500 / milliseconds_per_tick;
-    digitalWrite(led_pin, HIGH);
-    digitalWrite(led_pin, LOW);
-    vTaskDelay(simple_blink_ticks);
+
+    while (1) {
+        digitalWrite(led_pin, HIGH);
+        vTaskDelay(simple_blink_ticks);
+        digitalWrite(led_pin, LOW);
+        vTaskDelay(simple_blink_ticks);
+    }
 
 } /* simple_blink_cycle_task() */
 
