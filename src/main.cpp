@@ -39,19 +39,19 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
 // Ticks will be needed for vTaskDelay() and likely elsewhere.
 
 // Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
-void dynamic_blink_cycle_task(void *);
-void simple_blink_cycle_task(void *);
+void dynamic_blink_cycle_task(void *pvParameters);
+void simple_blink_cycle_task(void *pvParameters);
 
 
 /************************************************ FUNCTION DEFINITIONS ************************************************/
 
 // Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
 
-void dynamic_blink_cycle_task(void *) {
+void dynamic_blink_cycle_task(void *pvParameters) {
     // Prior to making this a task, we had nothing between the parens as arguments, just (). A key thing needed
     // to get the task code at least compiling and running, (not necessarily working correctly but at least
-    // running,) it was require to put exactly this for the arguments (void *). The docs and the error text were
-    // confusing as to the exact syntax needed but forum posts eventually helped me figure out the exact format.
+    // running,) was to put exactly this for the arguments (void *). The docs and the error text were
+    // not clear as to the exact syntax needed but forum posts eventually helped me figure out the exact format.
     // The reasoning is that when a function becomes a task, the concept of arguments changes and also the return
     // value of the function changes; specifically becoming TaskFunction_t. ( I think. But I tried also declaring
     // that type at the front of this function def (instead of void) but I don't think that worked and I had to
@@ -111,12 +111,13 @@ void dynamic_blink_cycle_task(void *) {
 } /* dynamic_blink_cycle_task() */
 
 
-void simple_blink_cycle_task(void *) {
+void simple_blink_cycle_task(void *pvParameters) {
     // half second on, half second off.
-    int simple_blink_ticks = 500 / milliseconds_per_tick;
+    TickType_t simple_blink_ticks = 500 / milliseconds_per_tick;
     digitalWrite(led_pin, HIGH);
     digitalWrite(led_pin, LOW);
     vTaskDelay(simple_blink_ticks);
+
 } /* simple_blink_cycle_task() */
 
 
@@ -131,7 +132,6 @@ void setup() {
     //xTaskCreate(dynamic_blink_cycle_task, "DynamicBlinkTask", 128, NULL, 1, NULL);
     xTaskCreate(simple_blink_cycle_task, "SimpleBlinkTask", 128, NULL, 1, NULL);
     vTaskStartScheduler();
-
 
 } /* setup() */
 
