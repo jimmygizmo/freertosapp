@@ -40,7 +40,8 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
 
 // Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
 void dynamic_blink_cycle_task(void *pvParameters);
-void simple_blink_cycle_task(void *pvParameters);
+
+[[noreturn]] void simple_blink_cycle_task(void *pvParameters);
 
 
 /************************************************ FUNCTION DEFINITIONS ************************************************/
@@ -111,11 +112,16 @@ void dynamic_blink_cycle_task(void *pvParameters) {
 } /* dynamic_blink_cycle_task() */
 
 
-void simple_blink_cycle_task(void *pvParameters) {
+[[noreturn]] void simple_blink_cycle_task(void *pvParameters) {
     // half second on, half second off.
+    // [[noreturn]] decoration above suppresses the Clang-Tidy warning that this is an endless loop.
+    // If [[noreturn]] does more than warning-suppression, we need to reconsider using it. CLion recommended it.
+    // TODO: research the full impact of [[noreturn]] Also, most apps would want to start and stop blinking
+    //   as conditions change and for this we might need to use a handle in the xTaskCreate so we can
+    //   stop the task later. In many cases an app might need to stop tasks it had started.
     TickType_t simple_blink_ticks = 500 / milliseconds_per_tick;
 
-    while (1) {
+    while (true) {
         digitalWrite(led_pin, HIGH);
         vTaskDelay(simple_blink_ticks);
         digitalWrite(led_pin, LOW);
