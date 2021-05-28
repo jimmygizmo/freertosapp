@@ -39,7 +39,7 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
 // Ticks will be needed for vTaskDelay() and likely elsewhere.
 
 // Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
-void dynamic_blink_cycle_task(void *pvParameters);
+[[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
 
 [[noreturn]] void simple_blink_cycle_task(void *pvParameters);
 
@@ -48,65 +48,32 @@ void dynamic_blink_cycle_task(void *pvParameters);
 
 // Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
 
-void dynamic_blink_cycle_task(void *pvParameters) {
-    // Prior to making this a task, we had nothing between the parens as arguments, just (). A key thing needed
-    // to get the task code at least compiling and running, (not necessarily working correctly but at least
-    // running,) was to put exactly this for the arguments (void *). The docs and the error text were
-    // not clear as to the exact syntax needed but forum posts eventually helped me figure out the exact format.
-    // The reasoning is that when a function becomes a task, the concept of arguments changes and also the return
-    // value of the function changes; specifically becoming TaskFunction_t. ( I think. But I tried also declaring
-    // that type at the front of this function def (instead of void) but I don't think that worked and I had to
-    // put it back to void.) The 2 or 3 relevant sections in the FreeRTOS docs are not super clear on this stuff,
-    // so it is good to read it carefully over and over while also trying things and taking info from good
-    // forum postings on StackExchange etc. But I did notice some misleading/bad info on the forums on this topic
-    // too, which you always need to watch out for. Don't assume that a very confident posting by a credible
-    // person, that no one challenges and people say thanks that worked like a charm .. even that info might be
-    // completely wrong for your specific scenario. Develop your own conclusions based on solid and multiple
-    // factors when trying to get something mysterious and complex to work correctly. Take the StackExchange
-    // stuff with a grain of salt and always only use it as a clue here and there, while you empirically cook your
-    // own quality results by using leads and clues from many sources. At this point I have some very weird
-    // high frequency blinking occurring in some unpredictable patterns so what I would like now is some logging
-    // to serial to help me understand what is happening. I will look for logging facilities built into FreeRTOS
-    // or some module that someone has made for this need or I will start adding my own logging which I always
-    // end up doing for everything I work on. You need good visibility into what is actually happening and this
-    // is especially true in asynchronous/real-time systems. In this case known exactly WHEN things happen,
-    // like on what tick or microsecond, seems particularly important. This logging will need good timing output.
-
+[[noreturn]] void dynamic_blink_cycle_task(void *pvParameters) {
+    // See simple_blink_cycle_task() below for comments on [[noreturn]], used to suppress CLang-Tidy endless loop warn.
     TickType_t blink_ticks;  // Will hold calculated tick value before each call to vTaskDelay().
 
-    /* Consider how we might make this blinking non-blocking, if not completely, at least to a much greater degree.
-     * At the moment it is a loop that modifies a delta value linearly larger and smaller again to operate the LED.
-     * It totally blocks during the two delay events of each iteration in the full cycle.
-     * We should be able to break this up by making each delay event into a FreeRTOS task so the Arduino can run
-     * other tasks during this new NON-BLOCKING delay. The task scheduling will be dynamic like the delays in the
-     * blocking version are. But, by using FreeRTOS, other parts of the application can independently do work at
-     * the same time. For instance, we could also have a servo moving in some pattern, totally independent of the
-     * dynamic blinking. This should be a very good initial proof of concept, prior to involving the LCD Keypad
-     * and user-input etc. */
+    while (true) {
+        digitalWrite(led_pin, HIGH);
+        blink_ticks = blink_delay / milliseconds_per_tick;
+        vTaskDelay(blink_ticks);
+        digitalWrite(led_pin, LOW);
+        blink_ticks = blink_delay / milliseconds_per_tick;
+        vTaskDelay(blink_ticks);
 
-    digitalWrite(led_pin, HIGH);
-    //delay(blink_delay);  // Trying the below FreeRTOS non-blocking delay
-    blink_ticks = blink_delay / milliseconds_per_tick;
-    vTaskDelay(blink_ticks);
-    digitalWrite(led_pin, LOW);
-    //delay(blink_delay);  // Trying the below FreeRTOS non-blocking delay
-    blink_ticks = blink_delay / milliseconds_per_tick;
-    vTaskDelay(blink_ticks);
+        if (delta_dir == 0) {
+            blink_delay = blink_delay - delay_delta;
+        } else {
+            blink_delay = blink_delay + delay_delta;
+        }
 
-    if (delta_dir == 0) {
-        blink_delay = blink_delay - delay_delta;
-    }
-    else {
-        blink_delay = blink_delay + delay_delta;
-    }
-
-    if (blink_delay < delay_min) {
-        delta_dir = 1;
-        blink_delay = delay_min;
-    }
-    if (blink_delay > delay_max) {
-        delta_dir = 0;
-        blink_delay = delay_max;
+        if (blink_delay < delay_min) {
+            delta_dir = 1;
+            blink_delay = delay_min;
+        }
+        if (blink_delay > delay_max) {
+            delta_dir = 0;
+            blink_delay = delay_max;
+        }
     }
 
 } /* dynamic_blink_cycle_task() */
@@ -119,15 +86,14 @@ void dynamic_blink_cycle_task(void *pvParameters) {
     // TODO: research the full impact of [[noreturn]] Also, most apps would want to start and stop blinking
     //   as conditions change and for this we might need to use a handle in the xTaskCreate so we can
     //   stop the task later. In many cases an app might need to stop tasks it had started.
-    TickType_t simple_blink_ticks = 500 / milliseconds_per_tick;
+    TickType_t blink_ticks = 500 / milliseconds_per_tick;
 
     while (true) {
         digitalWrite(led_pin, HIGH);
-        vTaskDelay(simple_blink_ticks);
+        vTaskDelay(blink_ticks);
         digitalWrite(led_pin, LOW);
-        vTaskDelay(simple_blink_ticks);
+        vTaskDelay(blink_ticks);
     }
-
 } /* simple_blink_cycle_task() */
 
 
@@ -139,8 +105,8 @@ void setup() {
 
     // FreeRTOS Initialization
     Serial.begin(9600);
-    //xTaskCreate(dynamic_blink_cycle_task, "DynamicBlinkTask", 128, NULL, 1, NULL);
-    xTaskCreate(simple_blink_cycle_task, "SimpleBlinkTask", 128, NULL, 1, NULL);
+    xTaskCreate(dynamic_blink_cycle_task, "DynamicBlinkTask", 128, NULL, 1, NULL);
+    //xTaskCreate(simple_blink_cycle_task, "SimpleBlinkTask", 128, NULL, 1, NULL);
     vTaskStartScheduler();
 
 } /* setup() */
@@ -151,8 +117,10 @@ void setup() {
 //cppcheck-suppress unusedFunction
 void loop() {
 
+    // TODO: Resolve this: I don't think we need to call anything in loop() for tasks. When using FreeRTOS, a lot of
+    //   stuff, if not everything, will be happening in (or rather starting from) setup().
     //TaskFunction_t dynamic_blink_cycle_task();
-    TaskFunction_t simple_blink_cycle_task();
+    //TaskFunction_t simple_blink_cycle_task();
 
 } /* loop() */
 
