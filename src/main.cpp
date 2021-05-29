@@ -13,6 +13,7 @@
 
 #include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
+#include <LiquidCrystal.h>
 
 // FreeRTOS Configuration
 #define INCLUDE_vTaskDelay  1  // To enable vTaskDelay()
@@ -21,6 +22,9 @@
 
 /******************************************* CONFIGURATION & INITIALIZATION *******************************************/
 
+/******** LED Blinking ********/
+
+// TODO: Most of these are constants at the moment, so use the correct style.
 int delay_delta = 10;  // The delta value in milliseconds by which blink_delay is either incremented or decremented.
 
 int blink_delay = 10;  // Starting value for blink delay in milliseconds. blink_delay will change dynamically.
@@ -38,10 +42,29 @@ int led_pin = 13;
 int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / milliseconds_per_tick
 // Ticks will be needed for vTaskDelay() and likely elsewhere.
 
+
+/******** FreeRTOS Task Function Prototypes ********/
+
 // Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
-
 [[noreturn]] void simple_blink_cycle_task(void *pvParameters);
+[[noreturn]] void lcd_fade_in_task(void *pvParameters);
+
+
+/******** LCD Keypad ********/
+
+/* NOTE: For the configuration of LCD Keypad hardware, there is a small chance of variance between different
+ * hardware vendors. You should check with the reference documentation for your specific hardware.
+ * My LCD Keypad Shield is made to attach to an Arduino UNO or Mega 2560 and is the Velleman VMA203 LCD1602.
+ * The pin configuration for the LCD module for the LiquidCrystal library is:
+ * LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+ * The backlight is controlled via digital pin 10.
+ * Some shields may have a pin which can control contrast, but this one only has a potentiometer for contrast.
+ * See the example code for the Arduino LiquidCrystal library by F Malpartida for other variations of these settings.
+ * */
+
+const int LCD_BRIGHTNESS_PIN = 10;
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 
 /************************************************ FUNCTION DEFINITIONS ************************************************/
@@ -103,6 +126,29 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
 void setup() {
     pinMode(led_pin, OUTPUT);  // Our LED pin must be set for output.
 
+    // LCD Initialization
+    lcd.begin(16,2);
+    lcd.clear();
+    pinMode(LCD_BRIGHTNESS_PIN, OUTPUT);
+    analogWrite(LCD_BRIGHTNESS_PIN, 210);
+
+
+    // TODO: This is very temporary, to test the LCD. FreeRTOS code is never reached.
+    uint8_t i = 0;
+    while (1) {
+        lcd.clear();
+        lcd.print("Codes 0x"); lcd.print(i, HEX);
+        lcd.print("-0x"); lcd.print(i+16, HEX);
+        lcd.setCursor(0, 1);
+        for (int j=0; j<16; j++) {
+            lcd.write(i+j);
+        }
+        i+=16;
+
+        delay(2000);
+    }
+
+
     // FreeRTOS Initialization
     Serial.begin(9600);
     xTaskCreate(dynamic_blink_cycle_task, "DynamicBlinkTask", 128, NULL, 1, NULL);
@@ -119,6 +165,8 @@ void loop() {
 
     // TODO: Resolve this: I don't think we need to call anything in loop() for tasks. When using FreeRTOS, a lot of
     //   stuff, if not everything, will be happening in (or rather starting from) setup().
+    //   What can/should we use loop() for in a FreeRTOS app? Does it use resources even when empty? If we will not
+    //   be using it, can we disable its repeated calling by Arduino? Does FreeRTOS offer this?
     //TaskFunction_t dynamic_blink_cycle_task();
     //TaskFunction_t simple_blink_cycle_task();
 
