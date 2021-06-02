@@ -79,9 +79,15 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters) {
     // See simple_blink_cycle_task() below for comments on [[noreturn]], used to suppress CLang-Tidy endless loop warn.
-    TickType_t blink_ticks;  // Will hold calculated tick value before each call to vTaskDelay().
 
     while (true) {
+        TickType_t blink_ticks;  // Will hold calculated tick value before each call to vTaskDelay().
+        // TODO: Determine best practice here. cppcheck told me I could reduce scope of blink_ticks, but to me this
+        // looks like unnecessary repeated attempts to re-create/initialize the variable which I realize is probably
+        // just a warning in most languages, but according to cppcheck, it is no problem here and was supposedly at
+        // too high a scope just up outside of this while. Is this situation (with a loop) for var initi different
+        // between cpp and perl? This definitely deserves clarification for both languages.
+
         digitalWrite(LED_PIN, HIGH);
         blink_ticks = blink_delay / MILLISECONDS_PER_TICK;
         vTaskDelay(blink_ticks);
