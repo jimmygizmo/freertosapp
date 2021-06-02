@@ -46,9 +46,9 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
 /******** FreeRTOS Task Function Prototypes ********/
 
 // Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
+// TODO: note on void args
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
 [[noreturn]] void simple_blink_cycle_task(void *pvParameters);
-[[noreturn]] void lcd_fade_in_task(void *pvParameters);
 
 
 /******** LCD Keypad ********/
@@ -58,12 +58,11 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
  * My LCD Keypad Shield is made to attach to an Arduino UNO or Mega 2560 and is the Velleman VMA203 LCD1602.
  * The pin configuration for the LCD module for the LiquidCrystal library is:
  * LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
- * The backlight is controlled via digital pin 10.
- * Some shields may have a pin which can control contrast, but this one only has a potentiometer for contrast.
- * See the example code for the Arduino LiquidCrystal library by F Malpartida for other variations of these settings.
+ * WARNING: Some LCD Keypads allow pin control of the backlight for on/off/brightness. NEVER USE THIS. Nearly all
+ * LCD Keypad shields that allow pin control of the backlight have a hardware flaw. If you ever set the designated
+ * pin to OUTPUT in order to use this feature, you will most likely burn out your Arduino voltage regulator.
  * */
 
-const int LCD_BRIGHTNESS_PIN = 10;
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 
@@ -129,11 +128,8 @@ void setup() {
     // LCD Initialization
     lcd.begin(16,2);
     lcd.clear();
-    pinMode(LCD_BRIGHTNESS_PIN, OUTPUT);
-    analogWrite(LCD_BRIGHTNESS_PIN, 210);
 
-
-    // TODO: This is very temporary, to test the LCD. FreeRTOS code is never reached.
+    // TODO: This is very temporary, to test the LCD. At the moment, FreeRTOS code is never reached.
     uint8_t i = 0;
     while (1) {
         lcd.clear();
@@ -145,7 +141,7 @@ void setup() {
         }
         i+=16;
 
-        delay(2000);
+        delay(3000);
     }
 
 
