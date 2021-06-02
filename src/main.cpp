@@ -25,21 +25,21 @@
 /******** LED Blinking ********/
 
 // TODO: Most of these are constants at the moment, so use the correct style.
-int delay_delta = 10;  // The delta value in milliseconds by which blink_delay is either incremented or decremented.
+const int DELAY_DELTA = 10;  // The delta value in milliseconds by which blink_delay is either incremented or decremented.
 
-int blink_delay = 10;  // Starting value for blink delay in milliseconds. blink_delay will change dynamically.
+int blink_delay = 10;  // Blink delay in milliseconds. blink_delay will change dynamically. Starting value.
 
-int delay_min = 10;  // Minimum blink_delay value in milliseconds before the delta_dir will change to ascending (1).
+const int DELAY_MIN = 10;  // Minimum blink_delay value in ms before the delta_dir will change to ascending (1).
 
-int delay_max = 140;  // Maximum blink_delay value in milliseconds before the delta_dir will change to descending (0).
+const int DELAY_MAX = 140;  // Maximum blink_delay value in ms before the delta_dir will change to descending (0).
 
-int delta_dir = 1;  // Initial direction for blink_delay increment/decrement: 1 up (add), 0 down (subtract)
+int delta_dir = 1;  // Direction for blink_delay increment/decrement: 1 up (add), 0 down (subtract)
 // Up/increment/add means the delays get longer. Down/decrement/subtract mean the delays get shorter.
 // The same delay value is used for LED <ON> time as for the <OFF> time, which are two different delay events.
 
-int led_pin = 13;
+const int LED_PIN = 13;
 
-int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / milliseconds_per_tick
+const int MILLISECONDS_PER_TICK = portTICK_PERIOD_MS;  // So: ticks = milliseconds / MILLISECONDS_PER_TICK
 // Ticks will be needed for vTaskDelay() and likely elsewhere.
 
 
@@ -58,9 +58,11 @@ int milliseconds_per_tick = portTICK_PERIOD_MS;  // So: ticks = milliseconds / m
  * My LCD Keypad Shield is made to attach to an Arduino UNO or Mega 2560 and is the Velleman VMA203 LCD1602.
  * The pin configuration for the LCD module for the LiquidCrystal library is:
  * LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
- * WARNING: Some LCD Keypads allow pin control of the backlight for on/off/brightness. NEVER USE THIS. Nearly all
- * LCD Keypad shields that allow pin control of the backlight have a hardware flaw. If you ever set the designated
- * pin to OUTPUT in order to use this feature, you will most likely burn out your Arduino voltage regulator.
+ * WARNING: Some LCD Keypads allow pin control of the backlight for on/off/brightness. NEVER USE THIS FEATURE. Nearly
+ * all LCD Keypad shields that allow pin control of the backlight have a hardware flaw. (On many such shields,
+ * this is on pin 10.) If you ever set the designated pin to OUTPUT in order to use this feature, you will most likely
+ * burn out your Arduino voltage regulator. Do NOT use this feature. Always leave this pin in INPUT mode.
+ * Your LCD backlight will simply stay on at full brightness.
  * */
 
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
@@ -70,31 +72,36 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 // Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
 
+[[noreturn]] void log_info_task(void *pvParameters) {
+
+} /* log_info_task */
+
+
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters) {
     // See simple_blink_cycle_task() below for comments on [[noreturn]], used to suppress CLang-Tidy endless loop warn.
     TickType_t blink_ticks;  // Will hold calculated tick value before each call to vTaskDelay().
 
     while (true) {
-        digitalWrite(led_pin, HIGH);
-        blink_ticks = blink_delay / milliseconds_per_tick;
+        digitalWrite(LED_PIN, HIGH);
+        blink_ticks = blink_delay / MILLISECONDS_PER_TICK;
         vTaskDelay(blink_ticks);
-        digitalWrite(led_pin, LOW);
-        blink_ticks = blink_delay / milliseconds_per_tick;
+        digitalWrite(LED_PIN, LOW);
+        blink_ticks = blink_delay / MILLISECONDS_PER_TICK;
         vTaskDelay(blink_ticks);
 
         if (delta_dir == 0) {
-            blink_delay = blink_delay - delay_delta;
+            blink_delay = blink_delay - DELAY_DELTA;
         } else {
-            blink_delay = blink_delay + delay_delta;
+            blink_delay = blink_delay + DELAY_DELTA;
         }
 
-        if (blink_delay < delay_min) {
+        if (blink_delay < DELAY_MIN) {
             delta_dir = 1;
-            blink_delay = delay_min;
+            blink_delay = DELAY_MIN;
         }
-        if (blink_delay > delay_max) {
+        if (blink_delay > DELAY_MAX) {
             delta_dir = 0;
-            blink_delay = delay_max;
+            blink_delay = DELAY_MAX;
         }
     }
 
@@ -108,12 +115,12 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
     // TODO: research the full impact of [[noreturn]] Also, most apps would want to start and stop blinking
     //   as conditions change and for this we might need to use a handle in the xTaskCreate so we can
     //   stop the task later. In many cases an app might need to stop tasks it had started.
-    TickType_t blink_ticks = 500 / milliseconds_per_tick;
+    TickType_t blink_ticks = 500 / MILLISECONDS_PER_TICK;
 
     while (true) {
-        digitalWrite(led_pin, HIGH);
+        digitalWrite(LED_PIN, HIGH);
         vTaskDelay(blink_ticks);
-        digitalWrite(led_pin, LOW);
+        digitalWrite(LED_PIN, LOW);
         vTaskDelay(blink_ticks);
     }
 } /* simple_blink_cycle_task() */
@@ -123,7 +130,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 //cppcheck-suppress unusedFunction
 void setup() {
-    pinMode(led_pin, OUTPUT);  // Our LED pin must be set for output.
+    pinMode(LED_PIN, OUTPUT);  // Our LED pin must be set for output.
 
     // LCD Initialization
     lcd.begin(16,2);
@@ -175,12 +182,12 @@ void loop() {
  * DESCRIPTION:
  * This is my basic implementation of Arduino FreeRTOS (Real Time Operating System) on an UNO, as a starting point
  * for later specific, utilitarian purposes, initially this will involve basic blink, serial monitor output and
- * possibly the use of an LCD Keypad as I would like to develop a nice real-time, non-blocking menu system for
- * Arduino + LCDKeypad. I think this extremely affordable hardware combo has massive value potential for so many
- * kinds of projects. It all hinges on being non-blocking, in my opinion, because even though the LCDKeypad has
- * great potential for human I/O, this is NOT true if it remains single-threaded/blocking, for pretty-much any
+ * eventually, the use of an LCD Keypad as I would like to develop a nice real-time, non-blocking menu system for
+ * Arduino + an LCD Keypad. I think this extremely affordable hardware combo has massive value potential for so many
+ * kinds of projects. It all hinges on being non-blocking, in my opinion, because even though the LCD Keypad has
+ * great potential for human I/O, this is NOT true if it remains single-threaded and blocking, for pretty-much any
  * kind of project. Yes, you could have a single Arduino running only the LCD Keypad menu I/O system and then
- * communicate with 1 or more other Arduinos or whatever, over serial or circuit logic or whatever, but there
+ * communicate with 1 or more other Arduinos or whatever, over serial or circuit logic etc., but there
  * is much value in being able to use an RTOS to free up the Arduino to do its most important work, while
  * simultaneously running a menu system, that does not necessarily need much CPU work; it simply needs real-time
  * responsiveness, while allowing other work to proceed with little or no interference between those separate
