@@ -46,9 +46,18 @@ const int MILLISECONDS_PER_TICK = portTICK_PERIOD_MS;  // So: ticks = millisecon
 /******** FreeRTOS Task Function Prototypes ********/
 
 // Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
-// TODO: note on void args
+// TODO: note on void args (The FreeRTOS book/examples/tutorials on the main site should help answer this.)
+// In general, regarding function prototypes in CPP (source: Google):
+// The function prototypes are used to tell the compiler about the number of arguments and about the required
+// datatypes of a function parameter, it also tells about the return type of the function. By this information,
+// the compiler cross-checks the function signatures before calling it.
+// TODO: UPDATE: Discovered that it is not strictly required. I accidentally got a new task working without the
+// function prototype for it in place. Coding best practice says still use them for sure as it helps the compiler
+// and more but it is not a requirement for FreeRTOS, as it was sort of made to seem to be in some info I was
+// following.
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
 [[noreturn]] void simple_blink_cycle_task(void *pvParameters);
+[[noreturn]] void rom_characters_demo_task(void *pvParameters);
 
 
 /******** LCD Keypad ********/
@@ -85,8 +94,16 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
         // TODO: Determine best practice here. cppcheck told me I could reduce scope of blink_ticks, but to me this
         // looks like unnecessary repeated attempts to re-create/initialize the variable which I realize is probably
         // just a warning in most languages, but according to cppcheck, it is no problem here and was supposedly at
-        // too high a scope just up outside of this while. Is this situation (with a loop) for var initi different
+        // too high a scope just up outside of this while. Is this situation (with a loop) for var init different
         // between cpp and perl? This definitely deserves clarification for both languages.
+        // TODO: ABOVE ANSWERED: At least for CPP, declaring the vars INSIDE the loop (when possible) IS in fact
+        // BEST PRACTICE. The compiler only allocates once and is smart about this being a loop. The code check is
+        // correct to recommend moving this declaration from just up/before and outside of this loop to inside
+        // of it.
+        // https://stackoverflow.com/questions/7959573/declaring-variables-inside-loops-good-practice-or-bad-practice
+        // TODO: Research this same topic for Python, and for arguments sake, since Java is a well-designed and formal
+        // object-oriented language with lots of rules and reasons for doing things .. let's see how the issue is
+        // addressed for Java as well.
 
         digitalWrite(LED_PIN, HIGH);
         blink_ticks = blink_delay / MILLISECONDS_PER_TICK;
@@ -132,6 +149,23 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 } /* simple_blink_cycle_task() */
 
 
+[[noreturn]] void rom_characters_demo_task(void *pvParameters) {
+    TickType_t scroll_pause_ticks = 1000 / MILLISECONDS_PER_TICK;
+    uint8_t i = 0;
+    while (1) {
+        lcd.clear();
+        lcd.print("Codes 0x"); lcd.print(i, HEX);
+        lcd.print("-0x"); lcd.print(i+15, HEX);
+        lcd.setCursor(0, 1);
+        for (int j=0; j<16; j++) {
+            lcd.write(i+j);
+        }
+        i+=16;
+        vTaskDelay(scroll_pause_ticks);
+    }
+}
+
+
 /*************************************************** ARDUINO SETUP ****************************************************/
 
 //cppcheck-suppress unusedFunction
@@ -142,26 +176,33 @@ void setup() {
     lcd.begin(16,2);
     lcd.clear();
 
-    // TODO: This is very temporary, to test the LCD. At the moment, FreeRTOS code is never reached.
-    uint8_t i = 0;
-    while (1) {
-        lcd.clear();
-        lcd.print("Codes 0x"); lcd.print(i, HEX);
-        lcd.print("-0x"); lcd.print(i+16, HEX);
-        lcd.setCursor(0, 1);
-        for (int j=0; j<16; j++) {
-            lcd.write(i+j);
-        }
-        i+=16;
-
-        delay(3000);
-    }
-
+    // Serial will be used for logging or communicating back to a PC/host over USB.
+    // BLE (Bluetooth Low Energy) via an HM-10 module is also a good/similar option and also requires Serial.
+    Serial.begin(9600);
 
     // FreeRTOS Initialization
-    Serial.begin(9600);
-    xTaskCreate(dynamic_blink_cycle_task, "DynamicBlinkTask", 128, NULL, 1, NULL);
-    //xTaskCreate(simple_blink_cycle_task, "SimpleBlinkTask", 128, NULL, 1, NULL);
+
+    xTaskCreate(dynamic_blink_cycle_task,
+                "DynamicBlinkTask",
+                128,
+                NULL,
+                1,
+                NULL);
+
+    xTaskCreate(rom_characters_demo_task,
+                "RomCharactersDemoTask",
+                128,
+                NULL,
+                1,
+                NULL);
+
+//    xTaskCreate(simple_blink_cycle_task,
+//                "SimpleBlinkTask",
+//                128,
+//                NULL,
+//                1,
+//                NULL);
+
     vTaskStartScheduler();
 
 } /* setup() */
