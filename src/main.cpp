@@ -43,21 +43,24 @@ const int MILLISECONDS_PER_TICK = portTICK_PERIOD_MS;  // So: ticks = millisecon
 // Ticks will be needed for vTaskDelay() and likely elsewhere.
 
 
-/******** FreeRTOS Task Function Prototypes ********/
+/******** ROM Character Demo ********/
 
-// Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
-// TODO: note on void args (The FreeRTOS book/examples/tutorials on the main site should help answer this.)
-// In general, regarding function prototypes in CPP (source: Google):
-// The function prototypes are used to tell the compiler about the number of arguments and about the required
-// datatypes of a function parameter, it also tells about the return type of the function. By this information,
-// the compiler cross-checks the function signatures before calling it.
-// TODO: UPDATE: Discovered that it is not strictly required. I accidentally got a new task working without the
-// function prototype for it in place. Coding best practice says still use them for sure as it helps the compiler
-// and more but it is not a requirement for FreeRTOS, as it was sort of made to seem to be in some info I was
-// following.
-[[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
-[[noreturn]] void simple_blink_cycle_task(void *pvParameters);
-[[noreturn]] void rom_characters_demo_task(void *pvParameters);
+// The ROM Characters can sort of be separated in to blocks of 16 characters which approximately divides different
+// sections of the full range of slots that may or may not contain factory-programmed ROM characters. Also note,
+// LCD Keypad shields from different vendors and/or for different countries may come with different factory-programmed
+// ROM character sets. These characters cannot be changed, however there is a way to make your own custom characters.
+// On my Velleman VMA203 LCD Keypad Shield, I have what I think is the most common set of European and Japanese Kanji
+// character sets, including some additional symbols. There are some 16 character blocks that have no characters
+// defined. A configuration for the character demo which shows ALL possible characters, meaning all possible blocks,
+// would be this: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}. However, I am eliminating the blocks with no
+// characters configured and some of the Kanji blocks, since I will not use any of those characters and the demo
+// is more about FreeRTOS and simultaneity than about available ROM characters.
+// Max possible array size is 16. Max possible block number is 15 as a 0-based index is used.
+// Blocks removed from demo: Blank: 0,1,8,9  and  Kanji: 11, 12, 13
+// Blocks 2, 3, 4, 5, 6 and 7 cover European Alphanumerics with most standard keyboard symbols included.
+// Blocks 10, 14 and 15 include some additional scientific and math symbols, accented letters and a few Kanji.
+
+const int rom_char_demo_blocks[9] = {2, 3, 4, 5, 6, 7, 10, 14, 15};
 
 
 /******** LCD Keypad ********/
@@ -75,6 +78,36 @@ const int MILLISECONDS_PER_TICK = portTICK_PERIOD_MS;  // So: ticks = millisecon
  * */
 
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+
+/******** FreeRTOS Task Function Prototypes ********/
+
+// Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
+// TODO: note on void args (The FreeRTOS book/examples/tutorials on the main site should help answer this.)
+// In general, regarding function prototypes in CPP (source: Google):
+// The function prototypes are used to tell the compiler about the number of arguments and about the required
+// datatypes of a function parameter, it also tells about the return type of the function. By this information,
+// the compiler cross-checks the function signatures before calling it.
+// TODO: UPDATE: Discovered that it is not strictly required. I accidentally got a new task working without the
+// function prototype for it in place. Coding best practice says still use them for sure as it helps the compiler
+// and more but it is not a requirement for FreeRTOS, as it was sort of made to seem to be in some info I was
+// following.
+[[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
+[[noreturn]] void simple_blink_cycle_task(void *pvParameters);
+[[noreturn]] void rom_characters_demo_task(void *pvParameters);
+
+/**
+ * Good info on function prototypes I found:
+ *
+ * With the declaration of a function the compiler can check the consistent use of parameters and return value,
+ * and can compile the code even if the function is not implemented in this module. If the function is only declared
+ * but not implemented in the respective module, this gap will be closed by the linker, not the compiler.
+ * It's similar to declaring extern variables. If you'd define them, the memory for them would be allocated multiple
+ * times. That's why you should never define variables in h-files, but declare them there. Including the h-file
+ * would result in multiple allocations of memory.
+ * FROM 3 or 4 postings down on:
+ * https://stackoverflow.com/questions/21670671/why-use-function-prototypes
+ * */
 
 
 /************************************************ FUNCTION DEFINITIONS ************************************************/
@@ -152,14 +185,33 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 [[noreturn]] void rom_characters_demo_task(void *pvParameters) {
     TickType_t char_pause_ticks = 100 / MILLISECONDS_PER_TICK;
     TickType_t scroll_pause_ticks = 1000 / MILLISECONDS_PER_TICK;
+
+
+//    ATTEMPT AT CONFIGURABLE ROM CHARACTER DEMO BLOCKS - NOT YET WORKING
+//    int demo_blocks_count = sizeof(rom_char_demo_blocks);
+//
+//    for (int i = 0; i < demo_blocks_count; i++) {
+//        int current_block = rom_char_demo_blocks[i];
+//        lcd.clear();
+//        lcd.print("Codes 0x"); lcd.print(current_block, HEX);
+//        lcd.print("-0x"); lcd.print(current_block + 15, HEX);
+//        lcd.setCursor(0, 1);
+//        for (int j = 0; j < 16; j++) {
+//            lcd.write(current_block + j);
+//            // Slow down character printing to simulate typing and make demo more interesting.
+//            vTaskDelay(char_pause_ticks);
+//        }
+//        vTaskDelay(scroll_pause_ticks);
+//    }
+
     uint8_t i = 0;
     while (1) {
         lcd.clear();
         lcd.print("Codes 0x"); lcd.print(i, HEX);
-        lcd.print("-0x"); lcd.print(i+15, HEX);
+        lcd.print("-0x"); lcd.print(i + 15, HEX);
         lcd.setCursor(0, 1);
-        for (int j=0; j<16; j++) {
-            lcd.write(i+j);
+        for (int j = 0; j < 16; j++) {
+            lcd.write(i + j);
             // Slow down character printing to simulate typing and make demo more interesting.
             vTaskDelay(char_pause_ticks);
         }
@@ -167,6 +219,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
         // Pause on each line of 16 rom characters for long enough for the user to read/inspect them somewhat.
         vTaskDelay(scroll_pause_ticks);
     }
+
 }
 
 
