@@ -150,6 +150,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 
 [[noreturn]] void rom_characters_demo_task(void *pvParameters) {
+    TickType_t char_pause_ticks = 100 / MILLISECONDS_PER_TICK;
     TickType_t scroll_pause_ticks = 1000 / MILLISECONDS_PER_TICK;
     uint8_t i = 0;
     while (1) {
@@ -159,8 +160,11 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
         lcd.setCursor(0, 1);
         for (int j=0; j<16; j++) {
             lcd.write(i+j);
+            // Slow down character printing to simulate typing and make demo more interesting.
+            vTaskDelay(char_pause_ticks);
         }
         i+=16;
+        // Pause on each line of 16 rom characters for long enough for the user to read/inspect them somewhat.
         vTaskDelay(scroll_pause_ticks);
     }
 }
