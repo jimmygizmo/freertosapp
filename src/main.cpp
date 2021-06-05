@@ -208,17 +208,18 @@ void log_info_task(void *pvParameters) {
         Serial.print("ROM Character Demo iteration # "); Serial.println(demo_iteration);
         for (unsigned int i = 0; i < DEMO_BLOCKS_COUNT; i++) {
             uint8_t current_block = ROM_CHAR_DEMO_BLOCKS[i];
+            uint8_t block_start_value = current_block * 16;
             // TODO: Convert this to use formatting:
-            Serial.print("Current block (decimal/uint8_t): "); Serial.println(current_block);
-            Serial.print("Current block as hex (string/print format HEX): "); Serial.println(current_block, HEX);
+            Serial.print("block start value (decimal/uint8_t): "); Serial.println(block_start_value);
+            Serial.print("block start value as hex: "); Serial.println(block_start_value, HEX);
             lcd.clear();
             lcd.print("Codes 0x");
-            lcd.print(current_block, HEX);
+            lcd.print(block_start_value, HEX);
             lcd.print("-0x");
-            lcd.print(current_block + 15, HEX);
+            lcd.print(block_start_value + 15, HEX);
             lcd.setCursor(0, 1);
             for (unsigned int j = 0; j < 16; j++) {
-                lcd.write(current_block + j);
+                lcd.write(block_start_value + j);
                 // Slow down character printing to simulate typing and make demo more interesting.
                 vTaskDelay(CHAR_PAUSE_TICKS);
             }
@@ -229,6 +230,8 @@ void log_info_task(void *pvParameters) {
 
 //    uint8_t i = 0;
 //    while (1) {
+//        Serial.print("Current block (decimal/uint8_t): "); Serial.println(i);
+//        Serial.print("Current block as hex (string/print format HEX): "); Serial.println(i, HEX);
 //        lcd.clear();
 //        lcd.print("Codes 0x"); lcd.print(i, HEX);
 //        lcd.print("-0x"); lcd.print(i + 15, HEX);
@@ -236,11 +239,11 @@ void log_info_task(void *pvParameters) {
 //        for (unsigned int j = 0; j < 16; j++) {
 //            lcd.write(i + j);
 //            // Slow down character printing to simulate typing and make demo more interesting.
-//            vTaskDelay(char_pause_ticks);
+//            vTaskDelay(CHAR_PAUSE_TICKS);
 //        }
 //        i+=16;
 //        // Pause on each line of 16 rom characters for long enough for the user to read/inspect them somewhat.
-//        vTaskDelay(scroll_pause_ticks);
+//        vTaskDelay(SCROLL_PAUSE_TICKS);
 //    }
 
 } /* rom_characters_demo_task */
