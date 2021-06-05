@@ -62,7 +62,13 @@ const int MILLISECONDS_PER_TICK = portTICK_PERIOD_MS;  // So: ticks = millisecon
 // Blocks 2, 3, 4, 5, 6 and 7 cover European Alphanumerics with most standard keyboard symbols included.
 // Blocks 10, 14 and 15 include some additional scientific and math symbols, accented letters and a few Kanji.
 
-const int rom_char_demo_blocks[9] = {2, 3, 4, 5, 6, 7, 10, 14, 15};
+const uint8_t ROM_CHAR_DEMO_BLOCKS[9] = {2, 3, 4, 5, 6, 7, 10, 14, 15};
+
+// Milliseconds to pause after each character is written, creating the typing effect:
+const int CHAR_PAUSE_MILLISECONDS = 100;
+
+// Milliseconds to pause after the complete printing of all 16 characters of a single block, so it can be read:
+const int SCROLL_PAUSE_MILLISECONDS = 1000;
 
 
 /******** LCD Keypad ********/
@@ -188,28 +194,37 @@ void log_info_task(void *pvParameters) {
 
 [[noreturn]] void rom_characters_demo_task(void *pvParameters) {
     Serial.println("TASK START: rom_characters_demo_task");
-    // TODO: move to config area:
-    const TickType_t char_pause_ticks = 100 / MILLISECONDS_PER_TICK;
-    const TickType_t scroll_pause_ticks = 1000 / MILLISECONDS_PER_TICK;
+    // TODO: The following also need a floor() function or similar because there is no guarantee that the result
+    //   will be a whole number (integer), which of course it must be.
+    const TickType_t CHAR_PAUSE_TICKS = CHAR_PAUSE_MILLISECONDS / MILLISECONDS_PER_TICK;
+    const TickType_t SCROLL_PAUSE_TICKS = SCROLL_PAUSE_MILLISECONDS / MILLISECONDS_PER_TICK;
 
-    int demo_blocks_count = sizeof(rom_char_demo_blocks);
+    // The following seems to be a preferred method of determining the number of elements in an array in C++.
+    const int DEMO_BLOCKS_COUNT = sizeof(ROM_CHAR_DEMO_BLOCKS)/sizeof(ROM_CHAR_DEMO_BLOCKS[0]);
+    int demo_iteration = 1;
 
     while (true) {
-        for (int i = 0; i < demo_blocks_count; i++) {
-            int current_block = rom_char_demo_blocks[i];
+        // TODO: Convert this to use formatting:
+        Serial.print("ROM Character Demo iteration # "); Serial.println(demo_iteration);
+        for (unsigned int i = 0; i < DEMO_BLOCKS_COUNT; i++) {
+            uint8_t current_block = ROM_CHAR_DEMO_BLOCKS[i];
+            // TODO: Convert this to use formatting:
+            Serial.print("Current block (decimal/uint8_t): "); Serial.println(current_block);
+            Serial.print("Current block as hex (string/print format HEX): "); Serial.println(current_block, HEX);
             lcd.clear();
             lcd.print("Codes 0x");
             lcd.print(current_block, HEX);
             lcd.print("-0x");
             lcd.print(current_block + 15, HEX);
             lcd.setCursor(0, 1);
-            for (int j = 0; j < 16; j++) {
+            for (unsigned int j = 0; j < 16; j++) {
                 lcd.write(current_block + j);
                 // Slow down character printing to simulate typing and make demo more interesting.
-                vTaskDelay(char_pause_ticks);
+                vTaskDelay(CHAR_PAUSE_TICKS);
             }
-            vTaskDelay(scroll_pause_ticks);
+            vTaskDelay(SCROLL_PAUSE_TICKS);
         }
+        demo_iteration++;
     }
 
 //    uint8_t i = 0;
@@ -218,7 +233,7 @@ void log_info_task(void *pvParameters) {
 //        lcd.print("Codes 0x"); lcd.print(i, HEX);
 //        lcd.print("-0x"); lcd.print(i + 15, HEX);
 //        lcd.setCursor(0, 1);
-//        for (int j = 0; j < 16; j++) {
+//        for (unsigned int j = 0; j < 16; j++) {
 //            lcd.write(i + j);
 //            // Slow down character printing to simulate typing and make demo more interesting.
 //            vTaskDelay(char_pause_ticks);
