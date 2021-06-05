@@ -8,7 +8,7 @@
  * PLATFORM: Atmel AVR (3.3.0) > Arduino Uno  [OSEPP Arduino UNO R4 (Rev 4.0)], Velleman VMA203 LCD Keypad
  * HARDWARE: ATMEGA328P 16MHz, 2KB RAM, 31.50KB Flash
  * TOOLS: PlatformIO v5.1.1, TODO: Finish this list.
- * COMPILED BINARY SIZE: TODO: Determine and add this.
+ * MEMORY USAGE: RAM: 714 bytes of 2048 bytes  -  Flash (compiled binary): 11268 bytes of 32256 bytes
  */
 
 /************************************************* INCLUDES & DEFINES *************************************************/
@@ -75,11 +75,11 @@ const int SCROLL_PAUSE_MILLISECONDS = 1000;
 /* NOTE: For the configuration of LCD Keypad hardware, there is a small chance of variance between different
  * hardware vendors. You should check with the reference documentation for your specific hardware.
  * My LCD Keypad Shield is made to attach to an Arduino UNO or Mega 2560 and is the Velleman VMA203 LCD1602.
- * The pin configuration for the LCD module for the LiquidCrystal library is:
+ * The pin configuration for this LCD Keypad Shield for the LiquidCrystal library is:
  * LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
- * WARNING: Some LCD Keypads allow pin control of the backlight for on/off/brightness. NEVER USE THIS FEATURE. Nearly
- * all LCD Keypad shields that allow pin control of the backlight have a hardware flaw. (On many such shields,
- * this is on pin 10.) If you ever set the designated pin to OUTPUT in order to use this feature, you will most likely
+ * WARNING: Some LCD Keypads allow pin control of the backlight for on/off/brightness. NEVER USE THIS FEATURE.
+ * Many LCD Keypad shields that allow pin control of the backlight have a hardware flaw. (On many such shields,
+ * this is on pin 10.) If you ever set the designated pin to OUTPUT in order to use this feature, you could easily
  * burn out your Arduino voltage regulator. Do NOT use this feature. Always leave this pin in INPUT mode.
  * Your LCD backlight will simply stay on at full brightness.
  * */
@@ -87,21 +87,15 @@ const int SCROLL_PAUSE_MILLISECONDS = 1000;
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 
-/******** FreeRTOS Task Function Prototypes ********/
+/******** Function Prototypes ********/
 
-// Function prototypes (Is this just a FreeRTOS thing or when else would we do this?)
-// TODO: note on void args (The FreeRTOS book/examples/tutorials on the main site should help answer this.)
-// In general, regarding function prototypes in CPP (source: Google):
-// The function prototypes are used to tell the compiler about the number of arguments and about the required
-// datatypes of a function parameter, it also tells about the return type of the function. By this information,
-// the compiler cross-checks the function signatures before calling it.
-// TODO: UPDATE: Discovered that it is not strictly required. I accidentally got a new task working without the
-// function prototype for it in place. Coding best practice says still use them for sure as it helps the compiler
-// and more but it is not a requirement for FreeRTOS, as it was sort of made to seem to be in some info I was
-// following.
+// TODO: We don't necessarily need function prototypes in such a simple program, but in some cases, these might
+//   best be moved into a header file. But with Arduino, we might never use a main.h file with our main.cpp file.
+// TODO: Determine with Arduino, when we might ever use a main.h file and thus consider moving these there, if we
+//   keep them at all.
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters);
-[[noreturn]] void simple_blink_cycle_task(void *pvParameters);
 [[noreturn]] void rom_characters_demo_task(void *pvParameters);
+// TODO: If we are going to keep these, have them for every function, right?
 
 /**
  * Good info on function prototypes I found:
@@ -119,8 +113,6 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 /************************************************ FUNCTION DEFINITIONS ************************************************/
 
-// Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
-
 void log_info_task(void *pvParameters) {
     // TODO: I could use my own lightweight logging library. Start that here with some simple logging functions.
 } /* log_info_task */
@@ -128,7 +120,6 @@ void log_info_task(void *pvParameters) {
 
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters) {
     Serial.println("TASK START: dynamic_blink_cycle_task");
-    // See simple_blink_cycle_task() below for comments on [[noreturn]], used to suppress CLang-Tidy endless loop warn.
 
     while (true) {
         TickType_t blink_ticks;  // Will hold calculated tick value before each call to vTaskDelay().
@@ -145,6 +136,9 @@ void log_info_task(void *pvParameters) {
         // TODO: Research this same topic for Python, and for arguments sake, since Java is a well-designed and formal
         // object-oriented language with lots of rules and reasons for doing things .. let's see how the issue is
         // addressed for Java as well.
+        // RESULT: Java: It is best practice to declare it inside the loop too and in fact the compiled bytecode will
+        // likely be no different (if String is used) and thus the functional effect is identical.
+        // FROM: https://stackoverflow.com/questions/8803674/declaring-variables-inside-or-outside-of-a-loop
 
         digitalWrite(LED_PIN, HIGH);
         blink_ticks = blink_delay / MILLISECONDS_PER_TICK;
