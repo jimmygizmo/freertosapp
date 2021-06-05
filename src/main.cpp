@@ -4,11 +4,13 @@
  * REPO: git@github.com/jimmygizmo/freertosapp
  * WEBSITE: https://ninthdevice.com
  * DESCRIPTION AND OTHER INFO: (See end of file)
- * LANGUAGES (Versions approx.): Arduino, FreeRTOS v10.4.3-8, C++ v TODO: Finish
+ * LANGUAGES (Versions approx.): Arduino, FreeRTOS v10.4.3-8, C++ v TODO: Finish this list.
  * PLATFORM: Atmel AVR (3.3.0) > Arduino Uno  [OSEPP Arduino UNO R4 (Rev 4.0)], Velleman VMA203 LCD Keypad
  * HARDWARE: ATMEGA328P 16MHz, 2KB RAM, 31.50KB Flash
- * TOOLS: PlatformIO v5.1.1, TODO: Finish
+ * TOOLS: PlatformIO v5.1.1, TODO: Finish this list.
+ * COMPILED BINARY SIZE: TODO: Determine and add this.
  */
+
 /************************************************* INCLUDES & DEFINES *************************************************/
 
 #include <Arduino.h>
@@ -114,12 +116,13 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 // Application-specific functions go here, where they must be defined before possible usage in setup() or loop().
 
-[[noreturn]] void log_info_task(void *pvParameters) {
-
+void log_info_task(void *pvParameters) {
+    // TODO: I could use my own lightweight logging library. Start that here with some simple logging functions.
 } /* log_info_task */
 
 
 [[noreturn]] void dynamic_blink_cycle_task(void *pvParameters) {
+    Serial.println("TASK START: dynamic_blink_cycle_task");
     // See simple_blink_cycle_task() below for comments on [[noreturn]], used to suppress CLang-Tidy endless loop warn.
 
     while (true) {
@@ -165,6 +168,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 
 [[noreturn]] void simple_blink_cycle_task(void *pvParameters) {
+    Serial.println("TASK START: simple_blink_cycle_task");
     // half second on, half second off.
     // [[noreturn]] decoration above suppresses the Clang-Tidy warning that this is an endless loop.
     // If [[noreturn]] does more than warning-suppression, we need to reconsider using it. CLion recommended it.
@@ -183,59 +187,63 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 
 [[noreturn]] void rom_characters_demo_task(void *pvParameters) {
-    TickType_t char_pause_ticks = 100 / MILLISECONDS_PER_TICK;
-    TickType_t scroll_pause_ticks = 1000 / MILLISECONDS_PER_TICK;
+    Serial.println("TASK START: rom_characters_demo_task");
+    // TODO: move to config area:
+    const TickType_t char_pause_ticks = 100 / MILLISECONDS_PER_TICK;
+    const TickType_t scroll_pause_ticks = 1000 / MILLISECONDS_PER_TICK;
 
+    int demo_blocks_count = sizeof(rom_char_demo_blocks);
 
-//    ATTEMPT AT CONFIGURABLE ROM CHARACTER DEMO BLOCKS - NOT YET WORKING
-//    int demo_blocks_count = sizeof(rom_char_demo_blocks);
-//
-//    for (int i = 0; i < demo_blocks_count; i++) {
-//        int current_block = rom_char_demo_blocks[i];
+    while (true) {
+        for (int i = 0; i < demo_blocks_count; i++) {
+            int current_block = rom_char_demo_blocks[i];
+            lcd.clear();
+            lcd.print("Codes 0x");
+            lcd.print(current_block, HEX);
+            lcd.print("-0x");
+            lcd.print(current_block + 15, HEX);
+            lcd.setCursor(0, 1);
+            for (int j = 0; j < 16; j++) {
+                lcd.write(current_block + j);
+                // Slow down character printing to simulate typing and make demo more interesting.
+                vTaskDelay(char_pause_ticks);
+            }
+            vTaskDelay(scroll_pause_ticks);
+        }
+    }
+
+//    uint8_t i = 0;
+//    while (1) {
 //        lcd.clear();
-//        lcd.print("Codes 0x"); lcd.print(current_block, HEX);
-//        lcd.print("-0x"); lcd.print(current_block + 15, HEX);
+//        lcd.print("Codes 0x"); lcd.print(i, HEX);
+//        lcd.print("-0x"); lcd.print(i + 15, HEX);
 //        lcd.setCursor(0, 1);
 //        for (int j = 0; j < 16; j++) {
-//            lcd.write(current_block + j);
+//            lcd.write(i + j);
 //            // Slow down character printing to simulate typing and make demo more interesting.
 //            vTaskDelay(char_pause_ticks);
 //        }
+//        i+=16;
+//        // Pause on each line of 16 rom characters for long enough for the user to read/inspect them somewhat.
 //        vTaskDelay(scroll_pause_ticks);
 //    }
 
-    uint8_t i = 0;
-    while (1) {
-        lcd.clear();
-        lcd.print("Codes 0x"); lcd.print(i, HEX);
-        lcd.print("-0x"); lcd.print(i + 15, HEX);
-        lcd.setCursor(0, 1);
-        for (int j = 0; j < 16; j++) {
-            lcd.write(i + j);
-            // Slow down character printing to simulate typing and make demo more interesting.
-            vTaskDelay(char_pause_ticks);
-        }
-        i+=16;
-        // Pause on each line of 16 rom characters for long enough for the user to read/inspect them somewhat.
-        vTaskDelay(scroll_pause_ticks);
-    }
-
-}
+} /* rom_characters_demo_task */
 
 
 /*************************************************** ARDUINO SETUP ****************************************************/
 
 //cppcheck-suppress unusedFunction
 void setup() {
+    // Serial will be used for logging or communicating back to a PC/host over USB.
+    // BLE (Bluetooth Low Energy) via an HM-10 module is also a good/similar option and also requires Serial.
+    Serial.begin(9600);
+    Serial.println("PROGRAM START: FreeRTOS App - Arduino Real Time Operating System, LCD Keypad Demo");
     pinMode(LED_PIN, OUTPUT);  // Our LED pin must be set for output.
 
     // LCD Initialization
     lcd.begin(16,2);
     lcd.clear();
-
-    // Serial will be used for logging or communicating back to a PC/host over USB.
-    // BLE (Bluetooth Low Energy) via an HM-10 module is also a good/similar option and also requires Serial.
-    Serial.begin(9600);
 
     // FreeRTOS Initialization
 
@@ -260,6 +268,7 @@ void setup() {
 //                1,
 //                NULL);
 
+    // Starting the scheduler starts all the tasks we just created.
     vTaskStartScheduler();
 
 } /* setup() */
