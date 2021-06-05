@@ -26,7 +26,6 @@
 
 /******** LED Blinking ********/
 
-// TODO: Most of these are constants at the moment, so use the correct style.
 const int DELAY_DELTA = 10;  // The delta value in milliseconds by which blink_delay is either incremented or decremented.
 
 int blink_delay = 10;  // Blink delay in milliseconds. blink_delay will change dynamically. Starting value.
@@ -173,25 +172,6 @@ void log_info_task(void *pvParameters) {
 } /* dynamic_blink_cycle_task() */
 
 
-[[noreturn]] void simple_blink_cycle_task(void *pvParameters) {
-    Serial.println("TASK START: simple_blink_cycle_task");
-    // half second on, half second off.
-    // [[noreturn]] decoration above suppresses the Clang-Tidy warning that this is an endless loop.
-    // If [[noreturn]] does more than warning-suppression, we need to reconsider using it. CLion recommended it.
-    // TODO: research the full impact of [[noreturn]] Also, most apps would want to start and stop blinking
-    //   as conditions change and for this we might need to use a handle in the xTaskCreate so we can
-    //   stop the task later. In many cases an app might need to stop tasks it had started.
-    TickType_t blink_ticks = 500 / MILLISECONDS_PER_TICK;
-
-    while (true) {
-        digitalWrite(LED_PIN, HIGH);
-        vTaskDelay(blink_ticks);
-        digitalWrite(LED_PIN, LOW);
-        vTaskDelay(blink_ticks);
-    }
-} /* simple_blink_cycle_task() */
-
-
 [[noreturn]] void rom_characters_demo_task(void *pvParameters) {
     Serial.println("TASK START: rom_characters_demo_task");
     // TODO: The following also need a floor() function or similar because there is no guarantee that the result
@@ -199,17 +179,13 @@ void log_info_task(void *pvParameters) {
     const TickType_t CHAR_PAUSE_TICKS = CHAR_PAUSE_MILLISECONDS / MILLISECONDS_PER_TICK;
     const TickType_t SCROLL_PAUSE_TICKS = SCROLL_PAUSE_MILLISECONDS / MILLISECONDS_PER_TICK;
 
-    // The following seems to be a preferred method of determining the number of elements in an array in C++.
-    const int DEMO_BLOCKS_COUNT = sizeof(ROM_CHAR_DEMO_BLOCKS)/sizeof(ROM_CHAR_DEMO_BLOCKS[0]);
-    int demo_iteration = 1;
+    unsigned int demo_iteration = 1;
 
     while (true) {
         // TODO: Convert this to use formatting:
         Serial.print("ROM Character Demo iteration # "); Serial.println(demo_iteration);
-        for (unsigned int i = 0; i < DEMO_BLOCKS_COUNT; i++) {
-            uint8_t current_block = ROM_CHAR_DEMO_BLOCKS[i];
+        for (unsigned char current_block : ROM_CHAR_DEMO_BLOCKS) {
             uint8_t block_start_value = current_block * 16;
-            // TODO: Convert this to use formatting:
             Serial.print("block start value (decimal/uint8_t): "); Serial.println(block_start_value);
             Serial.print("block start value as hex: "); Serial.println(block_start_value, HEX);
             lcd.clear();
@@ -228,24 +204,6 @@ void log_info_task(void *pvParameters) {
         demo_iteration++;
     }
 
-//    uint8_t i = 0;
-//    while (1) {
-//        Serial.print("Current block (decimal/uint8_t): "); Serial.println(i);
-//        Serial.print("Current block as hex (string/print format HEX): "); Serial.println(i, HEX);
-//        lcd.clear();
-//        lcd.print("Codes 0x"); lcd.print(i, HEX);
-//        lcd.print("-0x"); lcd.print(i + 15, HEX);
-//        lcd.setCursor(0, 1);
-//        for (unsigned int j = 0; j < 16; j++) {
-//            lcd.write(i + j);
-//            // Slow down character printing to simulate typing and make demo more interesting.
-//            vTaskDelay(CHAR_PAUSE_TICKS);
-//        }
-//        i+=16;
-//        // Pause on each line of 16 rom characters for long enough for the user to read/inspect them somewhat.
-//        vTaskDelay(SCROLL_PAUSE_TICKS);
-//    }
-
 } /* rom_characters_demo_task */
 
 
@@ -263,7 +221,7 @@ void setup() {
     lcd.begin(16,2);
     lcd.clear();
 
-    // FreeRTOS Initialization
+    // FreeRTOS Initialization - Creation of Tasks and Starting of the Task Scheduler
 
     xTaskCreate(dynamic_blink_cycle_task,
                 "DynamicBlinkTask",
@@ -279,13 +237,6 @@ void setup() {
                 1,
                 NULL);
 
-//    xTaskCreate(simple_blink_cycle_task,
-//                "SimpleBlinkTask",
-//                128,
-//                NULL,
-//                1,
-//                NULL);
-
     // Starting the scheduler starts all the tasks we just created.
     vTaskStartScheduler();
 
@@ -296,14 +247,8 @@ void setup() {
 
 //cppcheck-suppress unusedFunction
 void loop() {
-
-    // TODO: Resolve this: I don't think we need to call anything in loop() for tasks. When using FreeRTOS, a lot of
-    //   stuff, if not everything, will be happening in (or rather starting from) setup().
-    //   What can/should we use loop() for in a FreeRTOS app? Does it use resources even when empty? If we will not
-    //   be using it, can we disable its repeated calling by Arduino? Does FreeRTOS offer this?
-    //TaskFunction_t dynamic_blink_cycle_task();
-    //TaskFunction_t simple_blink_cycle_task();
-
+    // We currently do not need any code in the Arduino loop() function as we are running our own endless loops
+    // within FreeRTOS tasks, as needed. FreeRTOS tasks are started from the Arduino setup() function.
 } /* loop() */
 
 
@@ -344,10 +289,6 @@ void loop() {
  *
  * xTaskCreate Reference:
  * https://www.freertos.org/a00125.html
- *
- *
- *
- *
  *
  */
 
