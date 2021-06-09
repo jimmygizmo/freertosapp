@@ -1,0 +1,44 @@
+Once you have a few independent tasks working on a basic level and doing you are doing any delays with the
+non-blocking vTaskDelay(), you are then likely at the point where you need to communicate between tasks.
+FreeRTOS offers the multiple traditional patterns for communicating between threads or simultaneous processes/tasks.
+While watching this good general video about FreeRTOS by Mair Swartz (https://www.youtube.com/watch?v=E9FY-IOvC3Q)
+I noticed a particularly helpful decision diagram about when to use each of the various types of inter-task/
+inter-thread communication. I have recreated below in text format, the information from this diagram (video: 36:29):
+- - - -
+Design Decision Tree - FreeRTOS Interaction between two or more tasks.
+If a decision is false, continue to the next in the sequence, otherwise if true, use the indicated SOLUTION.
+
+Design Decision 1:
+"I want to communicate directly to another task. I care about counting or sending simple data."
+SOLUTION 1: Task Notification
+
+Design Decision 2:
+"Someone needs to block or unblock a task. I don't care who."
+SOLUTION 2: Semaphore
+
+Design Decision 3:
+"Only the task that blocks another task can unblock it."
+SOLUTION 3: Mutex
+
+Design Decision 4:
+"I need to pass data from one task to another."
+SOLUTION 4: Queue
+
+Design Decision 5:
+"Multiple things need to happen before I unblock a task."
+SOLUTION 5: Event Group
+
+So we have 5 different kinds of technologies to solve the problem of communicating (including blocking) between
+distinct and simultaneous tasks:
+1. Task Notification
+2. Semaphore
+3. Mutex
+4. Queue
+5. Event Group
+
+- - - -
+
+FreeRTOS Book and Reference Manual:
+https://www.freertos.org/Documentation/RTOS_book.html
+
+

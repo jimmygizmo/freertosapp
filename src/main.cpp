@@ -284,6 +284,9 @@ void loop() {
  * xTaskCreate Reference:
  * https://www.freertos.org/a00125.html
  *
+ * LCD Custom Character Generator Web App:
+ * https://maxpromer.github.io/LCD-Character-Creator/
+ *
  */
 
 
